@@ -1,0 +1,25 @@
+import "dotenv/config";
+import { dirname, importx } from "@discordx/importer";
+import { IntentsBitField } from "discord.js";
+import { Client } from "discordx";
+export const bot = new Client({
+    intents: [IntentsBitField.Flags.Guilds],
+    silent: false,
+});
+bot.once("clientReady", async () => {
+    await bot.guilds.fetch();
+    await bot.initApplicationCommands();
+    console.log("LaundryBot online.");
+});
+bot.on("interactionCreate", async (interaction) => {
+    await bot.executeInteraction(interaction);
+});
+async function run() {
+    const token = process.env.BOT_TOKEN;
+    if (!token) {
+        throw new Error("Could not find BOT_TOKEN in your environment");
+    }
+    await importx(`${dirname(import.meta.url)}/{events,commands}/**/*.{command,handler}.{ts,js}`);
+    await bot.login(token);
+}
+void run();
