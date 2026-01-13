@@ -2,6 +2,8 @@ import "dotenv/config";
 import { dirname, importx } from "@discordx/importer";
 import { IntentsBitField } from "discord.js";
 import { Client } from "discordx";
+import { startLaundryNotificationPoller } from "./services/laundryNotifications.js";
+import { startLaundryPresencePoller, updateLaundryPresence } from "./services/laundryPresence.js";
 export const bot = new Client({
     intents: [IntentsBitField.Flags.Guilds],
     silent: false,
@@ -9,6 +11,9 @@ export const bot = new Client({
 bot.once("clientReady", async () => {
     await bot.guilds.fetch();
     await bot.initApplicationCommands();
+    startLaundryNotificationPoller(bot);
+    startLaundryPresencePoller(bot);
+    await updateLaundryPresence(bot);
     console.log("LaundryBot online.");
 });
 bot.on("interactionCreate", async (interaction) => {
