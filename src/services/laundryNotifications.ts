@@ -35,12 +35,12 @@ export async function processLaundryNotifications(client: Client): Promise<void>
       await markLaundryCompleted();
       const statusRow = await getLaundryStatus();
       const helpRequests = await getActiveHelpRequests();
-      const { embeds, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+      const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
       const components = buildLaundryComponents(statusRow, helpRequests);
 
       await channel.send({
         content: "Laundry cycle has completed!",
-        embeds,
+        embeds: [embed],
         components,
         files,
       });

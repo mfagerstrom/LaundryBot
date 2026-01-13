@@ -58,22 +58,17 @@ export function buildLaundryEmbedPayload(row, helpRequests) {
                 name: bannerFilename,
             })]
         : [];
-    const embeds = [];
-    if (bannerFilename) {
-        embeds.push(new EmbedBuilder().setImage(`attachment://${bannerFilename}`));
-    }
-    const detailsEmbed = new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setFooter({
         text: footerText,
     });
     if (summary.statusLine) {
-        detailsEmbed.setDescription(summary.statusLine);
+        embed.setDescription(summary.statusLine);
     }
     if (helpRequests.length) {
-        detailsEmbed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
+        embed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
     }
-    embeds.push(detailsEmbed);
-    return { embeds, files };
+    return { embed, files };
 }
 function buildFooterTime(lastUpdatedDate, lastUpdatedTime) {
     if (!lastUpdatedDate || lastUpdatedTime === "Not available") {

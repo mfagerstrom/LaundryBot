@@ -56,10 +56,10 @@ export class LaundryCommand {
 
     const statusRow = await getLaundryStatus();
     const helpRequests = await getActiveHelpRequests();
-    const { embeds, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+    const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
     const components = buildLaundryComponents(statusRow, helpRequests);
 
-    await interaction.editReply({ embeds, components, files });
+    await interaction.editReply({ embeds: [embed], components, files });
     await updateLaundryPresence(interaction.client);
   }
 
@@ -85,10 +85,10 @@ export class LaundryCommand {
     );
     const updatedStatus = await getLaundryStatus();
     const helpRequests = await getActiveHelpRequests();
-    const { embeds, files } = buildLaundryEmbedPayload(updatedStatus, helpRequests);
+    const { embed, files } = buildLaundryEmbedPayload(updatedStatus, helpRequests);
     const components = buildLaundryComponents(updatedStatus, helpRequests);
 
-    await interaction.message.edit({ embeds, components, files });
+    await interaction.message.edit({ embeds: [embed], components, files });
     await updateLaundryPresence(interaction.client);
     await interaction.editReply({
       content: `Laundry started. Estimated done: ${formatLaundryTimestamp(expectedDoneAt)}.`,
@@ -161,10 +161,10 @@ export class LaundryCommand {
     await markLaundryCompleted(interaction.user.username);
     const statusRow = await getLaundryStatus();
     const helpRequests = await getActiveHelpRequests();
-    const { embeds, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+    const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
     const components = buildLaundryComponents(statusRow, helpRequests);
 
-    await interaction.message.edit({ embeds, components, files });
+    await interaction.message.edit({ embeds: [embed], components, files });
     await updateLaundryPresence(interaction.client);
     await interaction.editReply({ content: "Laundry marked as completed." });
   }
@@ -192,10 +192,10 @@ export class LaundryCommand {
       const message = await interaction.channel.messages.fetch(messageId);
       const statusRow = await getLaundryStatus();
       const helpRequests = await getActiveHelpRequests();
-      const { embeds, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+      const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
       const components = buildLaundryComponents(statusRow, helpRequests);
 
-      await message.edit({ embeds, components, files });
+      await message.edit({ embeds: [embed], components, files });
       await updateLaundryPresence(interaction.client);
     }
 
@@ -228,10 +228,10 @@ export class LaundryCommand {
       const message = await interaction.channel.messages.fetch(messageId);
       const statusRow = await getLaundryStatus();
       const helpRequests = await getActiveHelpRequests();
-      const { embeds, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+      const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
       const components = buildLaundryComponents(statusRow, helpRequests);
 
-      await message.edit({ embeds, components, files });
+      await message.edit({ embeds: [embed], components, files });
       await updateLaundryPresence(interaction.client);
     }
 

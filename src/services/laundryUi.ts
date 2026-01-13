@@ -65,7 +65,7 @@ export function buildLaundryComponents(
 export function buildLaundryEmbedPayload(
   row: LaundryStatusRow | null,
   helpRequests: LaundryHelpRequestRow[],
-): { embeds: EmbedBuilder[]; files: AttachmentBuilder[] } {
+): { embed: EmbedBuilder; files: AttachmentBuilder[] } {
   const summary = buildLaundrySummary(row);
   const helpRequestText = formatHelpRequests(helpRequests);
   const footerTime = buildFooterTime(summary.lastUpdatedDate, summary.lastUpdated);
@@ -85,28 +85,20 @@ export function buildLaundryEmbedPayload(
       name: bannerFilename,
     })]
     : [];
-  const embeds: EmbedBuilder[] = [];
-
-  if (bannerFilename) {
-    embeds.push(new EmbedBuilder().setImage(`attachment://${bannerFilename}`));
-  }
-
-  const detailsEmbed = new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setFooter({
       text: footerText,
     });
 
   if (summary.statusLine) {
-    detailsEmbed.setDescription(summary.statusLine);
+    embed.setDescription(summary.statusLine);
   }
 
   if (helpRequests.length) {
-    detailsEmbed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
+    embed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
   }
 
-  embeds.push(detailsEmbed);
-
-  return { embeds, files };
+  return { embed, files };
 }
 
 function buildFooterTime(lastUpdatedDate: Date | null, lastUpdatedTime: string): string {
