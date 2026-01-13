@@ -284,6 +284,27 @@ export async function markLaundryNotificationFailed(
   });
 }
 
+export async function cancelPendingLaundryNotifications(
+  reason = "Cancelled by manual completion.",
+  cancelledAt = new Date(),
+): Promise<void> {
+  await withOracleConnection(async (connection) => {
+    await connection.execute(
+      `UPDATE LAUNDRY_NOTIFICATIONS
+      SET STATUS = 'failed',
+        SENT_AT = :cancelledAt,
+        NOTES = :notes
+      WHERE STATUS = 'pending'`,
+      {
+        cancelledAt,
+        notes: reason,
+      },
+    );
+
+    await connection.commit();
+  });
+}
+
 export function formatLaundryTimestamp(value?: Date | null): string {
   if (!value) {
     return "Not set";

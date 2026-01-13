@@ -11,11 +11,13 @@ import {
   resolveHelpRequests,
 } from "../db/laundryHelp.js";
 import {
+  cancelPendingLaundryNotifications,
   formatLaundryTimestamp,
   getLaundryStatus,
   markLaundryCompleted,
   markLaundryStarted,
 } from "../db/laundryStatus.js";
+import { deleteRecentLaundryMessage, sendLaundryStatusMessage } from "../services/laundryMessages.js";
 import { updateLaundryPresence } from "../services/laundryPresence.js";
 import {
   buildHelpSelectMenu,
@@ -159,12 +161,17 @@ export class LaundryCommand {
     }
 
     await markLaundryCompleted(interaction.user.username);
+    await cancelPendingLaundryNotifications();
     const statusRow = await getLaundryStatus();
     const helpRequests = await getActiveHelpRequests();
-    const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
-    const components = buildLaundryComponents(statusRow, helpRequests);
-
-    await interaction.message.edit({ embeds: [embed], components, files });
+    const channel = interaction.channel ?? interaction.message.channel;
+    await deleteRecentLaundryMessage(channel, interaction.client.user?.id);
+    await sendLaundryStatusMessage(
+      channel,
+      statusRow,
+      helpRequests,
+      "Laundry cycle has been completed!",
+    );
     await updateLaundryPresence(interaction.client);
     await interaction.editReply({ content: "Laundry marked as completed." });
   }
