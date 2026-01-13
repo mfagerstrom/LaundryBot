@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 import { ButtonInteraction, CommandInteraction, MessageFlags, StringSelectMenuInteraction, } from "discord.js";
 import { ButtonComponent, Discord, SelectMenuComponent, Slash } from "discordx";
-import { createHelpRequests, getActiveHelpRequests, resolveHelpRequests, } from "../db/laundryHelp.js";
-import { formatLaundryTimestamp, getLaundryStatus, markLaundryCompleted, markLaundryStarted, } from "../db/laundryStatus.js";
+import { createHelpRequests, getActiveHelpRequests, getHelpRequestLabel, resolveHelpRequests, } from "../db/laundryHelp.js";
+import { cancelPendingLaundryNotifications, formatLaundryTimestamp, getLaundryStatus, markLaundryCompleted, markLaundryStarted, } from "../db/laundryStatus.js";
+import { deleteRecentLaundryMessage, sendLaundryStatusMessage } from "../services/laundryMessages.js";
 import { updateLaundryPresence } from "../services/laundryPresence.js";
 import { buildHelpSelectMenu, buildHelpDoneSelectMenu, buildLaundryComponents, buildLaundryEmbedPayload, getHelpButtonId, getHelpDoneButtonId, getCompleteButtonId, getLaundryButtonId, parseHelpDoneSelectId, parseHelpSelectId, } from "../services/laundryUi.js";
 const LAUNDRY_CHANNEL_ID = "1311001731936550952";
@@ -53,9 +54,9 @@ let LaundryCommand = class LaundryCommand {
         const { expectedDoneAt } = await markLaundryStarted(userId, userName, LAUNDRY_CHANNEL_ID);
         const updatedStatus = await getLaundryStatus();
         const helpRequests = await getActiveHelpRequests();
-        const { embed, files } = buildLaundryEmbedPayload(updatedStatus, helpRequests);
-        const components = buildLaundryComponents(updatedStatus, helpRequests);
-        await interaction.message.edit({ embeds: [embed], components, files });
+        const channel = interaction.channel ?? interaction.message.channel;
+        await deleteRecentLaundryMessage(channel, interaction.client.user?.id);
+        await sendLaundryStatusMessage(channel, updatedStatus, helpRequests, `${userName} flipped the laundry!`);
         await updateLaundryPresence(interaction.client);
         await interaction.editReply({
             content: `Laundry started. Estimated done: ${formatLaundryTimestamp(expectedDoneAt)}.`,
@@ -114,11 +115,12 @@ let LaundryCommand = class LaundryCommand {
             throw error;
         }
         await markLaundryCompleted(interaction.user.username);
+        await cancelPendingLaundryNotifications();
         const statusRow = await getLaundryStatus();
         const helpRequests = await getActiveHelpRequests();
-        const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
-        const components = buildLaundryComponents(statusRow, helpRequests);
-        await interaction.message.edit({ embeds: [embed], components, files });
+        const channel = interaction.channel ?? interaction.message.channel;
+        await deleteRecentLaundryMessage(channel, interaction.client.user?.id);
+        await sendLaundryStatusMessage(channel, statusRow, helpRequests, "Laundry cycle has been completed!");
         await updateLaundryPresence(interaction.client);
         await interaction.editReply({ content: "Laundry marked as completed." });
     }
@@ -138,12 +140,10 @@ let LaundryCommand = class LaundryCommand {
         const userName = interaction.user.username;
         await createHelpRequests(userId, userName, interaction.values);
         if (messageId && interaction.channel) {
-            const message = await interaction.channel.messages.fetch(messageId);
             const statusRow = await getLaundryStatus();
             const helpRequests = await getActiveHelpRequests();
-            const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
-            const components = buildLaundryComponents(statusRow, helpRequests);
-            await message.edit({ embeds: [embed], components, files });
+            await deleteRecentLaundryMessage(interaction.channel, interaction.client.user?.id);
+            await sendLaundryStatusMessage(interaction.channel, statusRow, helpRequests, `${userName} requested help! See details below.`);
             await updateLaundryPresence(interaction.client);
         }
         await interaction.editReply({
@@ -165,14 +165,19 @@ let LaundryCommand = class LaundryCommand {
         const messageId = parseHelpDoneSelectId(interaction.customId);
         const requestIds = interaction.values.map((value) => Number(value))
             .filter((value) => !Number.isNaN(value));
+        const existingRequests = await getActiveHelpRequests();
+        const completedLabels = existingRequests
+            .filter((request) => requestIds.includes(request.ID))
+            .map((request) => getHelpRequestLabel(request.REQUEST_TYPE));
+        const completedText = completedLabels.length
+            ? completedLabels.join(", ")
+            : "tasks";
         await resolveHelpRequests(requestIds);
         if (messageId && interaction.channel) {
-            const message = await interaction.channel.messages.fetch(messageId);
             const statusRow = await getLaundryStatus();
             const helpRequests = await getActiveHelpRequests();
-            const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
-            const components = buildLaundryComponents(statusRow, helpRequests);
-            await message.edit({ embeds: [embed], components, files });
+            await deleteRecentLaundryMessage(interaction.channel, interaction.client.user?.id);
+            await sendLaundryStatusMessage(interaction.channel, statusRow, helpRequests, `${interaction.user.username} helped by completing: ${completedText}`);
             await updateLaundryPresence(interaction.client);
         }
         await interaction.editReply({

@@ -1,6 +1,6 @@
 import { getActiveHelpRequests } from "../db/laundryHelp.js";
 import { getLaundryStatus, getPendingLaundryNotifications, markLaundryCompleted, markLaundryNotificationFailed, markLaundryNotificationSent, } from "../db/laundryStatus.js";
-import { buildLaundryComponents, buildLaundryEmbedPayload } from "./laundryUi.js";
+import { deleteRecentLaundryMessage, sendLaundryStatusMessage } from "./laundryMessages.js";
 import { updateLaundryPresence } from "./laundryPresence.js";
 const POLL_INTERVAL_MS = 15_000;
 export function startLaundryNotificationPoller(client) {
@@ -20,14 +20,8 @@ export async function processLaundryNotifications(client) {
             await markLaundryCompleted();
             const statusRow = await getLaundryStatus();
             const helpRequests = await getActiveHelpRequests();
-            const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
-            const components = buildLaundryComponents(statusRow, helpRequests);
-            await channel.send({
-                content: "Laundry cycle has completed!",
-                embeds: [embed],
-                components,
-                files,
-            });
+            await deleteRecentLaundryMessage(channel, client.user?.id);
+            await sendLaundryStatusMessage(channel, statusRow, helpRequests, "Laundry cycle has been completed!");
             await markLaundryNotificationSent(notification.ID);
             await updateLaundryPresence(client);
         }

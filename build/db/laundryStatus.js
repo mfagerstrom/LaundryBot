@@ -191,6 +191,19 @@ export async function markLaundryNotificationFailed(notificationId, errorMessage
         await connection.commit();
     });
 }
+export async function cancelPendingLaundryNotifications(reason = "Cancelled by manual completion.", cancelledAt = new Date()) {
+    await withOracleConnection(async (connection) => {
+        await connection.execute(`UPDATE LAUNDRY_NOTIFICATIONS
+      SET STATUS = 'failed',
+        SENT_AT = :cancelledAt,
+        NOTES = :notes
+      WHERE STATUS = 'pending'`, {
+            cancelledAt,
+            notes: reason,
+        });
+        await connection.commit();
+    });
+}
 export function formatLaundryTimestamp(value) {
     if (!value) {
         return "Not set";
