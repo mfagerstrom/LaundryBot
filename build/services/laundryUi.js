@@ -62,8 +62,13 @@ export function buildLaundryEmbedPayload(row, helpRequests) {
         .setFooter({
         text: footerText,
     });
+    if (summary.statusKey === "available") {
+        embed.setDescription("Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.\n\n");
+    }
     if (summary.statusLine) {
-        embed.setDescription(summary.statusLine);
+        const existing = embed.data.description ?? "";
+        const joined = existing ? `${existing}${summary.statusLine}` : summary.statusLine;
+        embed.setDescription(joined);
     }
     if (helpRequests.length) {
         embed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
