@@ -169,15 +169,14 @@ let LaundryCommand = class LaundryCommand {
         const completedLabels = existingRequests
             .filter((request) => requestIds.includes(request.ID))
             .map((request) => getHelpRequestLabel(request.REQUEST_TYPE));
-        const completedText = completedLabels.length
-            ? completedLabels.join(", ")
-            : "tasks";
         await resolveHelpRequests(requestIds);
         if (messageId && interaction.channel) {
             const statusRow = await getLaundryStatus();
             const helpRequests = await getActiveHelpRequests();
-            await deleteRecentLaundryMessage(interaction.channel, interaction.client.user?.id);
-            await sendLaundryStatusMessage(interaction.channel, statusRow, helpRequests, `${interaction.user.username} helped by completing: ${completedText}`);
+            if (completedLabels.length) {
+                await deleteRecentLaundryMessage(interaction.channel, interaction.client.user?.id);
+                await sendLaundryStatusMessage(interaction.channel, statusRow, helpRequests, `${interaction.user.username} helped by completing: ${completedLabels.join(", ")}`);
+            }
             await updateLaundryPresence(interaction.client);
         }
         await interaction.editReply({
