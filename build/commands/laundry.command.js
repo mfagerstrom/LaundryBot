@@ -13,7 +13,7 @@ import { createHelpRequests, getActiveHelpRequests, getHelpRequestLabel, resolve
 import { cancelPendingLaundryNotifications, formatLaundryTimestamp, getLaundryStatus, markLaundryCompleted, markLaundryStarted, } from "../db/laundryStatus.js";
 import { deleteRecentLaundryMessage, sendLaundryStatusMessage } from "../services/laundryMessages.js";
 import { updateLaundryPresence } from "../services/laundryPresence.js";
-import { buildHelpSelectMenu, buildHelpDoneSelectMenu, buildLaundryComponents, buildLaundryEmbedPayload, getHelpButtonId, getHelpDoneButtonId, getCompleteButtonId, getLaundryButtonId, parseHelpDoneSelectId, parseHelpSelectId, } from "../services/laundryUi.js";
+import { buildHelpSelectMenu, buildHelpDoneSelectMenu, buildLaundryComponents, buildLaundryDisplayPayload, getHelpButtonId, getHelpDoneButtonId, getCompleteButtonId, getLaundryButtonId, parseHelpDoneSelectId, parseHelpSelectId, } from "../services/laundryUi.js";
 const LAUNDRY_CHANNEL_ID = "1311001731936550952";
 const LAUNDRY_BUTTON_ID = getLaundryButtonId();
 const HELP_BUTTON_ID = getHelpButtonId();
@@ -33,9 +33,13 @@ let LaundryCommand = class LaundryCommand {
         }
         const statusRow = await getLaundryStatus();
         const helpRequests = await getActiveHelpRequests();
-        const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+        const { components: displayComponents, files } = buildLaundryDisplayPayload(statusRow, helpRequests);
         const components = buildLaundryComponents(statusRow, helpRequests);
-        await interaction.editReply({ embeds: [embed], components, files });
+        await interaction.editReply({
+            components: [...displayComponents, ...components],
+            files,
+            flags: MessageFlags.IsComponentsV2,
+        });
         await updateLaundryPresence(interaction.client);
     }
     async flipLaundry(interaction) {

@@ -3,11 +3,16 @@ import {
   AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder,
+  ComponentType,
+  SeparatorSpacingSize,
   StringSelectMenuBuilder,
 } from "discord.js";
 import path from "node:path";
 import { DateTime } from "luxon";
+import type {
+  APIComponentInContainer,
+  APIMessageTopLevelComponent,
+} from "discord.js";
 import type { LaundryHelpRequestRow } from "../db/laundryHelp.js";
 import {
   formatHelpRequests,
@@ -62,10 +67,11 @@ export function buildLaundryComponents(
   return [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
 }
 
-export function buildLaundryEmbedPayload(
+export function buildLaundryDisplayPayload(
   row: LaundryStatusRow | null,
   helpRequests: LaundryHelpRequestRow[],
-): { embed: EmbedBuilder; files: AttachmentBuilder[] } {
+  contentPrefix?: string,
+): { components: APIMessageTopLevelComponent[]; files: AttachmentBuilder[] } {
   const summary = buildLaundrySummary(row);
   const helpRequestText = formatHelpRequests(helpRequests);
   const footerTime = buildFooterTime(summary.lastUpdatedDate, summary.lastUpdated);
@@ -85,28 +91,51 @@ export function buildLaundryEmbedPayload(
       name: bannerFilename,
     })]
     : [];
-  const embed = new EmbedBuilder()
-    .setFooter({
-      text: footerText,
-    });
+  const containerComponents: APIComponentInContainer[] = [];
+  const mediaUrl = bannerFilename ? `attachment://${bannerFilename}` : null;
 
+  if (mediaUrl) {
+    containerComponents.push({
+      type: ComponentType.MediaGallery,
+      items: [{ media: { url: mediaUrl } }],
+    });
+  }
+
+  const statusLines: string[] = [];
+  if (contentPrefix) {
+    statusLines.push(`**${contentPrefix}**`);
+  }
   if (summary.statusKey === "available") {
-    embed.setDescription(
-      "Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.\n\n",
+    statusLines.push(
+      "Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.",
     );
   }
-
   if (summary.statusLine) {
-    const existing = embed.data.description ?? "";
-    const joined = existing ? `${existing}${summary.statusLine}` : summary.statusLine;
-    embed.setDescription(joined);
+    statusLines.push(summary.statusLine);
   }
+  if (!statusLines.length) {
+    statusLines.push("Laundry status update.");
+  }
+
+  containerComponents.push(buildTextDisplay(statusLines.join("\n\n")));
 
   if (helpRequests.length) {
-    embed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
+    containerComponents.push(buildSeparator());
+    containerComponents.push(buildTextDisplay(`**Help Requests**\n${helpRequestText}`));
   }
 
-  return { embed, files };
+  containerComponents.push(buildSeparator());
+  containerComponents.push(buildTextDisplay(`*${footerText}*`));
+
+  return {
+    components: [
+      {
+        type: ComponentType.Container,
+        components: containerComponents,
+      },
+    ],
+    files,
+  };
 }
 
 function buildFooterTime(lastUpdatedDate: Date | null, lastUpdatedTime: string): string {
@@ -196,4 +225,19 @@ export function buildHelpDoneSelectMenu(
     );
 
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+}
+
+function buildTextDisplay(content: string): APIComponentInContainer {
+  return {
+    type: ComponentType.TextDisplay,
+    content,
+  };
+}
+
+function buildSeparator(): APIComponentInContainer {
+  return {
+    type: ComponentType.Separator,
+    divider: true,
+    spacing: SeparatorSpacingSize.Small,
+  };
 }

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ComponentType, SeparatorSpacingSize, StringSelectMenuBuilder, } from "discord.js";
 import path from "node:path";
 import { DateTime } from "luxon";
 import { formatHelpRequests, getHelpRequestLabel, HELP_REQUEST_OPTIONS, } from "../db/laundryHelp.js";
@@ -38,7 +38,7 @@ export function buildLaundryComponents(row, helpRequests) {
     }
     return [new ActionRowBuilder().addComponents(buttons)];
 }
-export function buildLaundryEmbedPayload(row, helpRequests) {
+export function buildLaundryDisplayPayload(row, helpRequests, contentPrefix) {
     const summary = buildLaundrySummary(row);
     const helpRequestText = formatHelpRequests(helpRequests);
     const footerTime = buildFooterTime(summary.lastUpdatedDate, summary.lastUpdated);
@@ -58,22 +58,43 @@ export function buildLaundryEmbedPayload(row, helpRequests) {
                 name: bannerFilename,
             })]
         : [];
-    const embed = new EmbedBuilder()
-        .setFooter({
-        text: footerText,
-    });
+    const containerComponents = [];
+    const mediaUrl = bannerFilename ? `attachment://${bannerFilename}` : null;
+    if (mediaUrl) {
+        containerComponents.push({
+            type: ComponentType.MediaGallery,
+            items: [{ media: { url: mediaUrl } }],
+        });
+    }
+    const statusLines = [];
+    if (contentPrefix) {
+        statusLines.push(`**${contentPrefix}**`);
+    }
     if (summary.statusKey === "available") {
-        embed.setDescription("Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.\n\n");
+        statusLines.push("Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.");
     }
     if (summary.statusLine) {
-        const existing = embed.data.description ?? "";
-        const joined = existing ? `${existing}${summary.statusLine}` : summary.statusLine;
-        embed.setDescription(joined);
+        statusLines.push(summary.statusLine);
     }
+    if (!statusLines.length) {
+        statusLines.push("Laundry status update.");
+    }
+    containerComponents.push(buildTextDisplay(statusLines.join("\n\n")));
     if (helpRequests.length) {
-        embed.addFields({ name: "Help Requests", value: helpRequestText, inline: false });
+        containerComponents.push(buildSeparator());
+        containerComponents.push(buildTextDisplay(`**Help Requests**\n${helpRequestText}`));
     }
-    return { embed, files };
+    containerComponents.push(buildSeparator());
+    containerComponents.push(buildTextDisplay(`*${footerText}*`));
+    return {
+        components: [
+            {
+                type: ComponentType.Container,
+                components: containerComponents,
+            },
+        ],
+        files,
+    };
 }
 function buildFooterTime(lastUpdatedDate, lastUpdatedTime) {
     if (!lastUpdatedDate || lastUpdatedTime === "Not available") {
@@ -139,4 +160,17 @@ export function buildHelpDoneSelectMenu(messageId, helpRequests) {
         value: String(request.ID),
     })));
     return new ActionRowBuilder().addComponents(select);
+}
+function buildTextDisplay(content) {
+    return {
+        type: ComponentType.TextDisplay,
+        content,
+    };
+}
+function buildSeparator() {
+    return {
+        type: ComponentType.Separator,
+        divider: true,
+        spacing: SeparatorSpacingSize.Small,
+    };
 }

@@ -1,4 +1,5 @@
-import { buildLaundryComponents, buildLaundryEmbedPayload } from "./laundryUi.js";
+import { MessageFlags } from "discord.js";
+import { buildLaundryComponents, buildLaundryDisplayPayload } from "./laundryUi.js";
 const LAUNDRY_COMPONENT_IDS = new Set([
     "laundry_flip",
     "laundry_help",
@@ -24,14 +25,12 @@ export async function sendLaundryStatusMessage(channel, statusRow, helpRequests,
     if (!("send" in channel)) {
         return;
     }
-    const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+    const { components: displayComponents, files } = buildLaundryDisplayPayload(statusRow, helpRequests, contentPrefix);
     const components = buildLaundryComponents(statusRow, helpRequests);
-    const content = contentPrefix ? `${contentPrefix}` : undefined;
     await channel.send({
-        content,
-        embeds: [embed],
-        components,
+        components: [...displayComponents, ...components],
         files,
+        flags: MessageFlags.IsComponentsV2,
     });
 }
 function messageHasLaundryComponents(message) {

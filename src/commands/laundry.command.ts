@@ -24,7 +24,7 @@ import {
   buildHelpSelectMenu,
   buildHelpDoneSelectMenu,
   buildLaundryComponents,
-  buildLaundryEmbedPayload,
+  buildLaundryDisplayPayload,
   getHelpButtonId,
   getHelpDoneButtonId,
   getCompleteButtonId,
@@ -59,10 +59,17 @@ export class LaundryCommand {
 
     const statusRow = await getLaundryStatus();
     const helpRequests = await getActiveHelpRequests();
-    const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+    const { components: displayComponents, files } = buildLaundryDisplayPayload(
+      statusRow,
+      helpRequests,
+    );
     const components = buildLaundryComponents(statusRow, helpRequests);
 
-    await interaction.editReply({ embeds: [embed], components, files });
+    await interaction.editReply({
+      components: [...displayComponents, ...components],
+      files,
+      flags: MessageFlags.IsComponentsV2,
+    });
     await updateLaundryPresence(interaction.client);
   }
 

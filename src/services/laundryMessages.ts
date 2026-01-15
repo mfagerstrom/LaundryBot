@@ -1,7 +1,7 @@
-import type { TextBasedChannel } from "discord.js";
+import { MessageFlags, type TextBasedChannel } from "discord.js";
 import type { LaundryHelpRequestRow } from "../db/laundryHelp.js";
 import type { LaundryStatusRow } from "../db/laundryStatus.js";
-import { buildLaundryComponents, buildLaundryEmbedPayload } from "./laundryUi.js";
+import { buildLaundryComponents, buildLaundryDisplayPayload } from "./laundryUi.js";
 
 const LAUNDRY_COMPONENT_IDS = new Set([
   "laundry_flip",
@@ -42,15 +42,17 @@ export async function sendLaundryStatusMessage(
     return;
   }
 
-  const { embed, files } = buildLaundryEmbedPayload(statusRow, helpRequests);
+  const { components: displayComponents, files } = buildLaundryDisplayPayload(
+    statusRow,
+    helpRequests,
+    contentPrefix,
+  );
   const components = buildLaundryComponents(statusRow, helpRequests);
-  const content = contentPrefix ? `${contentPrefix}` : undefined;
 
   await channel.send({
-    content,
-    embeds: [embed],
-    components,
+    components: [...displayComponents, ...components],
     files,
+    flags: MessageFlags.IsComponentsV2,
   });
 }
 
