@@ -3,21 +3,28 @@ import { DateTime } from "luxon";
 import { buildLaundrySummary, getLaundryStatus } from "../db/laundryStatus.js";
 
 const PRESENCE_INTERVAL_MS = 30_000;
+const PRESENCE_FORCE_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 let lastPresenceText = "";
 
 export function startLaundryPresencePoller(client: Client): NodeJS.Timeout {
-  return setInterval(() => {
+  const poller = setInterval(() => {
     void updateLaundryPresence(client);
   }, PRESENCE_INTERVAL_MS);
+
+  setInterval(() => {
+    void updateLaundryPresence(client, true);
+  }, PRESENCE_FORCE_REFRESH_INTERVAL_MS);
+
+  return poller;
 }
 
-export async function updateLaundryPresence(client: Client): Promise<void> {
+export async function updateLaundryPresence(client: Client, force = false): Promise<void> {
   try {
     const statusRow = await getLaundryStatus();
     const summary = buildLaundrySummary(statusRow);
     const presenceText = buildPresenceText(summary.statusKey, summary.estimatedFreeByDate);
 
-    if (!client.user || presenceText === lastPresenceText) {
+    if (!client.user || (!force && presenceText === lastPresenceText)) {
       return;
     }
 
