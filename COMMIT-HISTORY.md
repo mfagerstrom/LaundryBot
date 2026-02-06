@@ -1,3 +1,4 @@
+2026-02-03 - Commit ID: 3ec8953 - fix: added service to keep the presence from expiring
 2026-02-03 - Commit ID: 278e809 - fix: recreated tables
 2026-01-14 - Commit ID: 06134d2 - fix: components v2!
 2026-01-13 - Commit ID: 4cf74c5 - fix: improved interactive wizard logic in threads.  Issue 3.
