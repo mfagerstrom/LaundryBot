@@ -5,12 +5,7 @@ import {
   StringSelectMenuInteraction,
 } from "discord.js";
 import { ButtonComponent, Discord, SelectMenuComponent, Slash } from "discordx";
-import {
-  createHelpRequests,
-  getActiveHelpRequests,
-  getHelpRequestLabel,
-  resolveHelpRequests,
-} from "../db/laundryHelp.js";
+import { getActiveHelpRequests, getHelpRequestLabel, resolveHelpRequests } from "../db/laundryHelp.js";
 import {
   cancelPendingLaundryNotifications,
   formatLaundryTimestamp,
@@ -21,21 +16,17 @@ import {
 import { deleteRecentLaundryMessage, sendLaundryStatusMessage } from "../services/laundryMessages.js";
 import { updateLaundryPresence } from "../services/laundryPresence.js";
 import {
-  buildHelpSelectMenu,
   buildHelpDoneSelectMenu,
   buildLaundryComponents,
   buildLaundryDisplayPayload,
-  getHelpButtonId,
   getHelpDoneButtonId,
   getCompleteButtonId,
   getLaundryButtonId,
   parseHelpDoneSelectId,
-  parseHelpSelectId,
 } from "../services/laundryUi.js";
 
 const LAUNDRY_CHANNEL_ID = "1311001731936550952";
 const LAUNDRY_BUTTON_ID = getLaundryButtonId();
-const HELP_BUTTON_ID = getHelpButtonId();
 const HELP_DONE_BUTTON_ID = getHelpDoneButtonId();
 const COMPLETE_BUTTON_ID = getCompleteButtonId();
 
@@ -109,28 +100,6 @@ export class LaundryCommand {
     });
   }
 
-  @ButtonComponent({ id: HELP_BUTTON_ID })
-  async requestHelp(interaction: ButtonInteraction): Promise<void> {
-    try {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    } catch (error) {
-      const errorCode = error instanceof Error ? (error as { code?: number }).code : undefined;
-      if (errorCode === 10062) {
-        return;
-      }
-
-      throw error;
-    }
-
-    const messageId = interaction.message.id;
-    const menuRow = buildHelpSelectMenu(messageId);
-
-    await interaction.editReply({
-      content: "What do you need help with?",
-      components: [menuRow],
-    });
-  }
-
   @ButtonComponent({ id: HELP_DONE_BUTTON_ID })
   async markHelped(interaction: ButtonInteraction): Promise<void> {
     try {
@@ -186,44 +155,6 @@ export class LaundryCommand {
     );
     await updateLaundryPresence(interaction.client);
     await interaction.editReply({ content: "Laundry marked as completed." });
-  }
-
-  @SelectMenuComponent({ id: /laundry_help_select:.+/ })
-  async submitHelpRequest(interaction: StringSelectMenuInteraction): Promise<void> {
-    try {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    } catch (error) {
-      const errorCode = error instanceof Error ? (error as { code?: number }).code : undefined;
-      if (errorCode === 10062) {
-        return;
-      }
-
-      throw error;
-    }
-
-    const messageId = parseHelpSelectId(interaction.customId);
-    const userId = interaction.user.id;
-    const userName = interaction.user.username;
-
-    await createHelpRequests(userId, userName, interaction.values);
-
-    if (messageId && interaction.channel) {
-      const statusRow = await getLaundryStatus();
-      const helpRequests = await getActiveHelpRequests();
-      await deleteRecentLaundryMessage(interaction.channel, interaction.client.user?.id);
-      await sendLaundryStatusMessage(
-        interaction.channel,
-        statusRow,
-        helpRequests,
-        `${userName} requested help! See details below.`,
-      );
-      await updateLaundryPresence(interaction.client);
-    }
-
-    await interaction.editReply({
-      content: "Thanks! Your help request has been posted.",
-      components: [],
-    });
   }
 
   @SelectMenuComponent({ id: /laundry_help_done_select:.+/ })

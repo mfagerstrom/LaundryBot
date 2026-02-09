@@ -1,3 +1,4 @@
+2026-02-05 - Commit ID: 8ee276f - chore: updated readme
 2026-02-03 - Commit ID: 3ec8953 - fix: added service to keep the presence from expiring
 2026-02-03 - Commit ID: 278e809 - fix: recreated tables
 2026-01-14 - Commit ID: 06134d2 - fix: components v2!

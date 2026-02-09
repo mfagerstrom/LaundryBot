@@ -14,17 +14,11 @@ import type {
   APIMessageTopLevelComponent,
 } from "discord.js";
 import type { LaundryHelpRequestRow } from "../db/laundryHelp.js";
-import {
-  formatHelpRequests,
-  getHelpRequestLabel,
-  HELP_REQUEST_OPTIONS,
-} from "../db/laundryHelp.js";
+import { formatHelpRequests, getHelpRequestLabel } from "../db/laundryHelp.js";
 import type { LaundryStatusRow } from "../db/laundryStatus.js";
 import { buildLaundrySummary } from "../db/laundryStatus.js";
 
 const LAUNDRY_BUTTON_ID = "laundry_flip";
-const HELP_BUTTON_ID = "laundry_help";
-const HELP_SELECT_ID = "laundry_help_select";
 const HELP_DONE_BUTTON_ID = "laundry_help_done";
 const HELP_DONE_SELECT_ID = "laundry_help_done_select";
 const COMPLETE_BUTTON_ID = "laundry_complete";
@@ -51,11 +45,6 @@ export function buildLaundryComponents(
       .setLabel("Mark Laundry Completed")
       .setStyle(ButtonStyle.Secondary));
   }
-
-  buttons.push(new ButtonBuilder()
-    .setCustomId(HELP_BUTTON_ID)
-    .setLabel("Request Help")
-    .setStyle(ButtonStyle.Secondary));
 
   if (helpRequests.length) {
     buttons.push(new ButtonBuilder()
@@ -107,7 +96,7 @@ export function buildLaundryDisplayPayload(
   }
   if (summary.statusKey === "available") {
     statusLines.push(
-      "Is there laundry to do? Get it started and click the \"I Flipped It\" button or ask for help using the \"Request Help\" button.",
+      "Is there laundry to do? Get it started and click the \"I Flipped It\" button.",
     );
   }
   if (summary.statusLine) {
@@ -157,29 +146,12 @@ export function getLaundryButtonId(): string {
   return LAUNDRY_BUTTON_ID;
 }
 
-export function getHelpButtonId(): string {
-  return HELP_BUTTON_ID;
-}
-
 export function getHelpDoneButtonId(): string {
   return HELP_DONE_BUTTON_ID;
 }
 
 export function getCompleteButtonId(): string {
   return COMPLETE_BUTTON_ID;
-}
-
-export function getHelpSelectId(messageId: string): string {
-  return `${HELP_SELECT_ID}:${messageId}`;
-}
-
-export function parseHelpSelectId(customId: string): string | null {
-  const [prefix, messageId] = customId.split(":");
-  if (prefix !== HELP_SELECT_ID || !messageId) {
-    return null;
-  }
-
-  return messageId;
 }
 
 export function getHelpDoneSelectId(messageId: string): string {
@@ -193,19 +165,6 @@ export function parseHelpDoneSelectId(customId: string): string | null {
   }
 
   return messageId;
-}
-
-export function buildHelpSelectMenu(
-  messageId: string,
-): ActionRowBuilder<StringSelectMenuBuilder> {
-  const select = new StringSelectMenuBuilder()
-    .setCustomId(getHelpSelectId(messageId))
-    .setPlaceholder("Choose one or more tasks")
-    .setMinValues(1)
-    .setMaxValues(HELP_REQUEST_OPTIONS.length)
-    .addOptions(Array.from(HELP_REQUEST_OPTIONS));
-
-  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 }
 
 export function buildHelpDoneSelectMenu(
