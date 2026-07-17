@@ -53,6 +53,21 @@ npm run build
 npm run start
 ```
 
+**Docker**
+The bot ships as a container image published to GHCR on every push to `main` (see
+`.github/workflows/docker-publish.yml`).
+
+Deploy with Docker Compose:
+```bash
+docker compose up -d
+```
+
+This runs two services:
+- `bot` the LaundryBot container, pulling `ghcr.io/mfagerstrom/laundrybot:latest`
+- `watchtower` polls for new image versions every 5 minutes and auto-updates the running container
+
+Place your `.env` file (see Environment Variables above) next to `docker-compose.yml`.
+
 **Useful Scripts**
 - `npm run lint` run ESLint.
 - `npm run compile` type-check only.
